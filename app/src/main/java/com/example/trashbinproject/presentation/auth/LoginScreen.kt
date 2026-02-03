@@ -67,7 +67,7 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    var username by remember { mutableStateOf("") }
+    var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
     val offsetY by rememberInfiniteTransition()
@@ -127,8 +127,8 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
+                    value = login,
+                    onValueChange = { login = it },
                     label = { Text("Имя пользователя") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -158,7 +158,7 @@ fun LoginScreen(
                             brush = Brush.linearGradient(gradientColors),
                             shape = RoundedCornerShape(24.dp)
                         )
-                        .clickable(onClick = { viewModel.login(username, password) }),
+                        .clickable(onClick = { viewModel.login(login, password) }),
                     contentAlignment = Alignment.Center
                 ) {
                     if (uiState.isLoading) {

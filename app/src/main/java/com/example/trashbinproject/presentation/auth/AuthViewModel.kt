@@ -25,11 +25,11 @@ class AuthViewModel(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState
 
-    fun register(username: String, password: String, name: String) {
+    fun register(username: String, login: String, password: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             try {
-                val response = api.register(UserCreateRequest(username, password, name))
+                val response = api.register(UserCreateRequest(username, password, login))
                 val token = response.accessToken
                 if (!token.isNullOrEmpty()) {
                     tokenManager.saveToken(token)
@@ -41,11 +41,11 @@ class AuthViewModel(
         }
     }
 
-    fun login(username: String, password: String) {
+    fun login(login: String, password: String) {
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             try {
-                val response = api.login(UserLoginRequest(username, password))
+                val response = api.login(UserLoginRequest(login, password))
                 val token = response.accessToken
                 if (!token.isNullOrEmpty()) {
                     tokenManager.saveToken(token)

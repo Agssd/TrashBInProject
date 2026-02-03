@@ -63,7 +63,7 @@ fun RegisterScreen(
 
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
+    var login by remember { mutableStateOf("") }
 
     val offsetY by rememberInfiniteTransition()
         .animateFloat(
@@ -121,8 +121,8 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
+                    value = username,
+                    onValueChange = { username = it },
                     label = { Text("Имя пользователя") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -132,8 +132,8 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
+                    value = login,
+                    onValueChange = { login = it },
                     label = { Text("Логин пользователя") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -163,7 +163,7 @@ fun RegisterScreen(
                             brush = Brush.linearGradient(gradientColors),
                             shape = RoundedCornerShape(24.dp)
                         )
-                        .clickable(onClick = { viewModel.register(username, password, name) }),
+                        .clickable(onClick = { viewModel.register(username, login, password) }),
                     contentAlignment = Alignment.Center
                 ) {
                     if (uiState.isLoading) {
