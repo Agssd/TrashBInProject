@@ -15,37 +15,59 @@ private val Context.dataStore by preferencesDataStore(name = "auth_prefs")
 class TokenManager(private val context: Context) {
 
     companion object {
-        private val TOKEN_KEY = stringPreferencesKey("auth_token")
+        private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
+        private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
     }
 
     @Volatile
-    var currentToken: String? = null   
+    var currentAccessToken: String? = null
 
-    val token: Flow<String?> = context.dataStore.data
-        .map { prefs -> prefs[TOKEN_KEY] }
+    val accessTokenFlow: Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[ACCESS_TOKEN_KEY] }
+
+    val refreshTokenFlow: Flow<String?> = context.dataStore.data
+        .map { prefs -> prefs[REFRESH_TOKEN_KEY] }
 
     init {
         runBlocking {
-            currentToken = context.dataStore.data
-                .map { prefs -> prefs[TOKEN_KEY] }
-                .firstOrNull()
+            val prefs = context.dataStore.data.firstOrNull()
+            currentAccessToken = prefs?.get(ACCESS_TOKEN_KEY)
         }
     }
 
-    suspend fun saveToken(token: String) {
-        currentToken = token
-        AuthStorage.token = token
+    suspend fun saveTokens(access: String, refresh: String) {
+        currentAccessToken = access
+        AuthStorage.token = access
 
         context.dataStore.edit { prefs ->
-            prefs[TOKEN_KEY] = token
+            prefs[ACCESS_TOKEN_KEY] = access
+            prefs[REFRESH_TOKEN_KEY] = refresh
         }
     }
 
-    suspend fun clearToken() {
+    suspend fun saveAccessToken(access: String) {
+        currentAccessToken = access
+        AuthStorage.token = access
+
         context.dataStore.edit { prefs ->
-            prefs.remove(TOKEN_KEY)
+            prefs[ACCESS_TOKEN_KEY] = access
         }
-        currentToken = null
+    }
+
+    suspend fun clearTokens() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(ACCESS_TOKEN_KEY)
+            prefs.remove(REFRESH_TOKEN_KEY)
+        }
+        currentAccessToken = null
         AuthStorage.token = null
+    }
+
+    suspend fun getAccessToken(): String? {
+        return currentAccessToken ?: accessTokenFlow.firstOrNull()
+    }
+
+    suspend fun getRefreshToken(): String? {
+        return refreshTokenFlow.firstOrNull()
     }
 }

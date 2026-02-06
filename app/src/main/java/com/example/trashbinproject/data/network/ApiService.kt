@@ -2,11 +2,13 @@ package com.example.trashbinproject.data.network
 
 import com.example.trashbinproject.domain.ClassificationResult
 import com.example.trashbinproject.domain.PointsUpdateRequest
+import com.example.trashbinproject.domain.RefreshRequest
 import com.example.trashbinproject.domain.TokenResponse
 import com.example.trashbinproject.domain.UserCreateRequest
 import com.example.trashbinproject.domain.UserLoginRequest
 import com.example.trashbinproject.domain.UserResponse
 import okhttp3.MultipartBody
+import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -27,6 +29,9 @@ interface ApiService {
 
     @POST("login")
     suspend fun login(@Body body: UserLoginRequest): TokenResponse
+
+    @POST("refresh")
+    fun refresh(@Body body: RefreshRequest): Call<TokenResponse>
 
     @GET("me")
     suspend fun me(): UserResponse

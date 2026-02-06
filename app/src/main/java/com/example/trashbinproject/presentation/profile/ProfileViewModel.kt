@@ -58,7 +58,7 @@ class ProfileViewModel(
 
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
-            tokenManager.clearToken()
+            tokenManager.clearTokens()
             onComplete()
         }
     }

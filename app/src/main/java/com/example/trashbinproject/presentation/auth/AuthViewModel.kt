@@ -29,12 +29,13 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.value = AuthUiState(isLoading = true)
             try {
-                val response = api.register(UserCreateRequest(username, password, login))
+                val response = api.register(UserCreateRequest(username, login, password))
                 val token = response.accessToken
-                if (!token.isNullOrEmpty()) {
-                    tokenManager.saveToken(token)
-                }
-                _uiState.value = AuthUiState(isSuccess = !token.isNullOrEmpty(), token = token)
+                tokenManager.saveTokens(
+                    access = response.accessToken,
+                    refresh = response.refreshToken
+                )
+                _uiState.value = AuthUiState(isSuccess = !token.isNullOrEmpty())
             } catch (e: Exception) {
                 _uiState.value = AuthUiState(error = e.message ?: "Ошибка регистрации")
             }
@@ -48,9 +49,12 @@ class AuthViewModel(
                 val response = api.login(UserLoginRequest(login, password))
                 val token = response.accessToken
                 if (!token.isNullOrEmpty()) {
-                    tokenManager.saveToken(token)
+                    tokenManager.saveTokens(
+                        access = response.accessToken,
+                        refresh = response.refreshToken
+                    )
                 }
-                _uiState.value = AuthUiState(isSuccess = !token.isNullOrEmpty(), token = token)
+                _uiState.value = AuthUiState(isSuccess = !token.isNullOrEmpty())
             } catch (e: Exception) {
                 _uiState.value = AuthUiState(error = e.message ?: "Ошибка входа")
             }
@@ -59,7 +63,7 @@ class AuthViewModel(
 
     fun logout() {
         viewModelScope.launch {
-            tokenManager.clearToken()
+            tokenManager.clearTokens()
             _uiState.value = AuthUiState()
         }
     }

@@ -40,7 +40,7 @@ fun AppNavHost(navController: NavHostController) {
     val scannerViewModel: ScannerViewModel = koinViewModel()
 
     val tokenManager: TokenManager = getKoin().get()
-    val token by tokenManager.token.collectAsState(initial = null)
+    val accessToken  by tokenManager.accessTokenFlow.collectAsState(initial = null)
 
     var isLoading by remember { mutableStateOf(true) }
 
@@ -51,7 +51,7 @@ fun AppNavHost(navController: NavHostController) {
 
     val startDestination = if (isLoading) {
         "splash"
-    } else if (token.isNullOrEmpty()) {
+    } else if (accessToken == null) {
         "onboarding1"
     } else {
         "trash_bin"

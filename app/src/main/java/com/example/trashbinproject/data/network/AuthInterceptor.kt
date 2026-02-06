@@ -3,29 +3,37 @@ package com.example.trashbinproject.data.network
 import com.example.trashbinproject.data.storage.TokenManager
 import android.util.Log
 import com.example.trashbinproject.data.storage.AuthStorage
+import com.example.trashbinproject.data.storage.TokenAuthenticator
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 
-class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
+class AuthInterceptor(
+    private val tokenManager: TokenManager
+) : Interceptor {
 
+    // ✅ TokenAuthenticator создаём ЗДЕСЬ!
+    private val tokenAuthenticator = TokenAuthenticator(
+        tokenManager = tokenManager,
+        retrofit = Retrofit.Builder()
+            .baseUrl("http://10.0.2.2:8080") // простой retrofit!
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    )
     override fun intercept(chain: Interceptor.Chain): Response {
-        val originalRequest = chain.request()
+        val original = chain.request()
+        val token = runBlocking { tokenManager.getAccessToken() }
 
-        val token = tokenManager.currentToken ?: AuthStorage.token
-        Log.d("AuthInterceptor", "Token used for request: $token")
-
-        val requestWithAuth = if (!token.isNullOrEmpty()) {
-            originalRequest.newBuilder()
+        return if (token != null) {
+            val req = original.newBuilder()
                 .addHeader("Authorization", "Bearer $token")
-                .build().also {
-                    Log.d("AuthInterceptor", "Added Authorization header for ${originalRequest.url}")
-                }
+                .build()
+            chain.proceed(req)
         } else {
-            Log.d("AuthInterceptor", "No auth token available for request: ${originalRequest.url}")
-            originalRequest
+            chain.proceed(original)
         }
-
-        return chain.proceed(requestWithAuth)
     }
 }

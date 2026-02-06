@@ -5,6 +5,7 @@ import com.example.trashbinproject.presentation.auth.AuthViewModel
 import com.example.trashbinproject.presentation.scanner.ScannerViewModel
 import com.example.trashbinproject.data.network.ApiService
 import com.example.trashbinproject.data.network.AuthInterceptor
+import com.example.trashbinproject.data.storage.TokenAuthenticator
 import com.example.zteam.trash.ProfileViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -20,19 +21,22 @@ val appModule = module {
     single { TokenManager(androidContext()) }
     single { AuthInterceptor(get()) }
 
+    // ✅ OkHttpClient БЕЗ TokenAuthenticator в Koin!
     single {
         val logger = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
+
         OkHttpClient.Builder()
             .addInterceptor(logger)
             .addInterceptor(get<AuthInterceptor>())
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
-            .build()
+            .build() // ← БЕЗ .authenticator()!
     }
 
+    // ✅ ApiService
     single<ApiService> {
         Retrofit.Builder()
             .baseUrl("http://10.0.2.2:8080")
@@ -42,7 +46,9 @@ val appModule = module {
             .create(ApiService::class.java)
     }
 
+    // ✅ TokenAuthenticator создаём ЛОКАЛЬНО в AuthInterceptor!
     viewModelOf(::AuthViewModel)
     viewModelOf(::ProfileViewModel)
     viewModel { ScannerViewModel(get()) }
 }
+
