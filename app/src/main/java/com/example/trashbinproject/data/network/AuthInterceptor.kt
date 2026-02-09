@@ -16,7 +16,7 @@ class AuthInterceptor(
 ) : Interceptor {
 
     // ✅ TokenAuthenticator создаём ЗДЕСЬ!
-    private val tokenAuthenticator = TokenAuthenticator(
+    val tokenAuthenticator = TokenAuthenticator(
         tokenManager = tokenManager,
         retrofit = Retrofit.Builder()
             .baseUrl("http://10.0.2.2:8080") // простой retrofit!

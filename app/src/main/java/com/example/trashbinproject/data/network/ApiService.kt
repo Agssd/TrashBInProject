@@ -4,6 +4,7 @@ import com.example.trashbinproject.domain.ClassificationResult
 import com.example.trashbinproject.domain.PointsUpdateRequest
 import com.example.trashbinproject.domain.RefreshRequest
 import com.example.trashbinproject.domain.TokenResponse
+import com.example.trashbinproject.domain.TrashBinResponse
 import com.example.trashbinproject.domain.UserCreateRequest
 import com.example.trashbinproject.domain.UserLoginRequest
 import com.example.trashbinproject.domain.UserResponse
@@ -16,6 +17,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
+import retrofit2.http.Query
 
 interface ApiService {
     @Multipart
@@ -38,4 +40,10 @@ interface ApiService {
 
     @PATCH("me/points")
     suspend fun updatePoints(@Body body: PointsUpdateRequest): UserResponse
+
+    @GET("users/nearby-trash-bins")
+    suspend fun getNearbyTrashBins(
+        @Query("lat") lat: Double,
+        @Query("lng") lng: Double
+    ): List<TrashBinResponse>
 }

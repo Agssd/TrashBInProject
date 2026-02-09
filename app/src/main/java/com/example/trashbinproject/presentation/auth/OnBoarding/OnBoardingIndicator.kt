@@ -18,13 +18,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 val gradientColors = listOf(
-    Color(0xFF7FDBDA), // Светло-голубой
-    Color(0xFF4D7CCC)  // Сине-фиолетовый
+    Color(0xFF4B3FBF), // верх: тёмно-сиреневый
+    Color(0xFFB266FF)  // низ: светлый фиолетовый
 )
 
 val gradientColorsAuth = listOf(
-    Color(0xFF81C784), // Светло-зелёный (начало градиента)
-    Color(0xFF2E7D32)  // Насыщенный зелёный (конец градиента)
+    Color(0xFF81C784),
+    Color(0xFF2E7D32)
 )
 
 @Composable

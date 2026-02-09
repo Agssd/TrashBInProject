@@ -29,12 +29,13 @@ android {
 
     defaultConfig {
         applicationId = "com.example.trashbinproject"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "YANDEX_API_KEY", "\"${properties["YANDEX_MAPKIT_API_KEY"].toString()}\"")
     }
 
     buildTypes {
@@ -46,6 +47,11 @@ android {
             )
         }
     }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -73,6 +79,10 @@ dependencies {
     implementation("com.google.guava:guava:31.1-android")
     implementation("androidx.datastore:datastore-preferences:1.1.7")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
+
+    // Geoloc
+    implementation("com.yandex.android:maps.mobile:4.10.0-full")
+    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 
     // CameraX
     implementation("androidx.camera:camera-camera2:1.3.0")

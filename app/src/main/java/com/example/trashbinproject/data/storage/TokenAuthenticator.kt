@@ -26,18 +26,18 @@ class TokenAuthenticator(
             null
         }
 
-        if (refreshResponse == null || !refreshResponse.isSuccessful) {
+        if (refreshResponse?.isSuccessful != true) {
             runBlocking { tokenManager.clearTokens() }
             return null
         }
 
         val body = refreshResponse.body() ?: return null
 
+        tokenManager.currentAccessToken = body.accessToken
+        AuthStorage.token = body.accessToken
+
         runBlocking {
-            tokenManager.saveTokens(
-                access = body.accessToken,
-                refresh = body.refreshToken
-            )
+            tokenManager.saveTokens(body.accessToken, body.refreshToken)
         }
 
         return response.request.newBuilder()

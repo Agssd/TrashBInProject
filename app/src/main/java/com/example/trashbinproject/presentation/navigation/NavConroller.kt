@@ -14,8 +14,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.trashbinproject.data.storage.TokenManager
 import com.example.trashbinproject.presentation.main.TrashBinViewModel
 import com.example.trashbinproject.presentation.auth.AuthViewModel
@@ -24,6 +26,7 @@ import com.example.trashbinproject.presentation.auth.OnBoarding.OnboardingScreen
 import com.example.trashbinproject.presentation.auth.OnBoarding.OnboardingScreen2
 import com.example.trashbinproject.presentation.auth.OnBoarding.OnboardingScreen3
 import com.example.trashbinproject.presentation.auth.SplashScreen
+import com.example.trashbinproject.presentation.map.MapScreen
 import com.example.trashbinproject.presentation.profile.ProfileScreen
 import com.example.trashbinproject.presentation.scanner.ResultScreen
 import com.example.trashbinproject.presentation.scanner.ScannerScreen
@@ -121,12 +124,11 @@ fun AppNavHost(navController: NavHostController) {
             val profileViewModel: ProfileViewModel = koinViewModel()
             TrashBinScreen(
                 trashBinViewModel = trashBinViewModel,
-                onNavigateToScanner = {
-                    navController.navigate("scanner")
-                },
+                onNavigateToScanner = { navController.navigate("scanner") },
                 profileViewModel = profileViewModel,
-                onProfileClick = {
-                    navController.navigate("profile")
+                onProfileClick = { navController.navigate("profile") },
+                onNavigateToMap = { lat, lng ->
+                    navController.navigate("map/${lat}/${lng}")
                 }
             )
         }
@@ -172,6 +174,33 @@ fun AppNavHost(navController: NavHostController) {
                     }
                 },
                 profileViewModel = profileViewModel
+            )
+        }
+        composable(
+            route = "map/{lat}/{lng}",
+            arguments = listOf(
+                navArgument("lat") {
+                    type = NavType.FloatType
+                    defaultValue = 55.1644f  // ✅ Float!
+                },
+                navArgument("lng") {
+                    type = NavType.FloatType
+                    defaultValue = 61.4368f  // ✅ Float!
+                }
+            )
+        ) { backStackEntry ->
+            val lat = backStackEntry.arguments?.getFloat("lat") ?: 55.1644f   // ✅ getFloat!
+            val lng = backStackEntry.arguments?.getFloat("lng") ?: 61.4368f   // ✅ getFloat!
+
+            MapScreen(
+                userLat = lat.toDouble(),  // ✅ Конвертируем для MapScreen
+                userLng = lng.toDouble(),
+                onBack = { navController.popBackStack() },
+                onBackToMain = {
+                    navController.navigate("trash_bin") {
+                        popUpTo("map") { inclusive = true }
+                    }
+                }
             )
         }
     }

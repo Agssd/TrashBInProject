@@ -30,6 +30,7 @@ val appModule = module {
         OkHttpClient.Builder()
             .addInterceptor(logger)
             .addInterceptor(get<AuthInterceptor>())
+            .authenticator(get<AuthInterceptor>().tokenAuthenticator)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
