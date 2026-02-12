@@ -1,6 +1,9 @@
 package com.example.trashbinproject.data.network
 
+import com.example.trashbinproject.domain.CanScanRequest
+import com.example.trashbinproject.domain.CanScanResponse
 import com.example.trashbinproject.domain.ClassificationResult
+import com.example.trashbinproject.domain.MarkScannedRequest
 import com.example.trashbinproject.domain.PointsUpdateRequest
 import com.example.trashbinproject.domain.RefreshRequest
 import com.example.trashbinproject.domain.TokenResponse
@@ -41,9 +44,16 @@ interface ApiService {
     @PATCH("me/points")
     suspend fun updatePoints(@Body body: PointsUpdateRequest): UserResponse
 
-    @GET("users/nearby-trash-bins")
+    @GET("trash-bins/nearby-trash-bins")
     suspend fun getNearbyTrashBins(
         @Query("lat") lat: Double,
-        @Query("lng") lng: Double
+        @Query("lng") lng: Double,
+        @Query("radius") radius: Int = 1000
     ): List<TrashBinResponse>
+
+    @POST("trash-bins/bins/can-scan")
+    suspend fun canScanBin(@Body request: CanScanRequest): CanScanResponse
+
+    @POST("trash-bins/bins/mark-scanned")
+    suspend fun markBinScanned(@Body request: MarkScannedRequest): Response<Unit>
 }

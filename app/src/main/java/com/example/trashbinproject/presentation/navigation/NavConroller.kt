@@ -19,14 +19,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.trashbinproject.data.storage.TokenManager
-import com.example.trashbinproject.presentation.main.TrashBinViewModel
 import com.example.trashbinproject.presentation.auth.AuthViewModel
 import com.example.trashbinproject.presentation.auth.LoginScreen
 import com.example.trashbinproject.presentation.auth.OnBoarding.OnboardingScreen1
 import com.example.trashbinproject.presentation.auth.OnBoarding.OnboardingScreen2
 import com.example.trashbinproject.presentation.auth.OnBoarding.OnboardingScreen3
 import com.example.trashbinproject.presentation.auth.SplashScreen
-import com.example.trashbinproject.presentation.map.MapScreen
+import com.example.trashbinproject.presentation.main.TrashBinViewModel
+import com.example.trashbinproject.presentation.map.MapScreenViewModel
 import com.example.trashbinproject.presentation.profile.ProfileScreen
 import com.example.trashbinproject.presentation.scanner.ResultScreen
 import com.example.trashbinproject.presentation.scanner.ScannerScreen
@@ -34,7 +34,6 @@ import com.example.trashbinproject.presentation.scanner.ScannerViewModel
 import com.example.zteam.trash.ProfileViewModel
 import com.example.zteam.trash.TrashBinScreen
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.getKoin
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -86,7 +85,6 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
         composable("onboarding3") {
-            val coroutineScope = rememberCoroutineScope()
             OnboardingScreen3(
                 onNext = { navController.navigate("login") },
                 onSkip = { navController.navigate("login") }
@@ -124,7 +122,6 @@ fun AppNavHost(navController: NavHostController) {
             val profileViewModel: ProfileViewModel = koinViewModel()
             TrashBinScreen(
                 trashBinViewModel = trashBinViewModel,
-                onNavigateToScanner = { navController.navigate("scanner") },
                 profileViewModel = profileViewModel,
                 onProfileClick = { navController.navigate("profile") },
                 onNavigateToMap = { lat, lng ->
@@ -164,43 +161,38 @@ fun AppNavHost(navController: NavHostController) {
             )
         }
 
-        composable("result") {
+        composable("result/{binId}") { backStackEntry ->
+            val binId = backStackEntry.arguments?.getString("binId")?.toInt() ?: 0
             val profileViewModel: ProfileViewModel = koinViewModel()
+
             ResultScreen(
                 scannerViewModel = scannerViewModel,
                 onBackToMain = {
                     navController.navigate("trash_bin") {
-                        popUpTo("result") { inclusive = true }
+                        popUpTo("result/{binId}") { inclusive = true }
                     }
                 },
-                profileViewModel = profileViewModel
+                profileViewModel = profileViewModel,
+                binId = binId
             )
         }
-        composable(
-            route = "map/{lat}/{lng}",
-            arguments = listOf(
-                navArgument("lat") {
-                    type = NavType.FloatType
-                    defaultValue = 55.1644f  // ✅ Float!
-                },
-                navArgument("lng") {
-                    type = NavType.FloatType
-                    defaultValue = 61.4368f  // ✅ Float!
-                }
-            )
-        ) { backStackEntry ->
-            val lat = backStackEntry.arguments?.getFloat("lat") ?: 55.1644f   // ✅ getFloat!
-            val lng = backStackEntry.arguments?.getFloat("lng") ?: 61.4368f   // ✅ getFloat!
+
+        composable("map/{lat}/{lng}", arguments = listOf(
+            navArgument("lat") { type = NavType.FloatType; defaultValue = 55.1644f },
+            navArgument("lng") { type = NavType.FloatType; defaultValue = 61.4368f }
+        )) { backStackEntry ->
+            val lat = backStackEntry.arguments?.getFloat("lat")?.toDouble() ?: 55.1644
+            val lng = backStackEntry.arguments?.getFloat("lng")?.toDouble() ?: 61.4368
+
+            val mapScreenViewModel: MapScreenViewModel = koinViewModel()
 
             MapScreen(
-                userLat = lat.toDouble(),  // ✅ Конвертируем для MapScreen
-                userLng = lng.toDouble(),
+                userLat = lat,
+                userLng = lng,
                 onBack = { navController.popBackStack() },
-                onBackToMain = {
-                    navController.navigate("trash_bin") {
-                        popUpTo("map") { inclusive = true }
-                    }
-                }
+                onBackToMain = { navController.navigate("trash_bin") { popUpTo("map") { inclusive = true } } },
+                onNavigateToScanner = { navController.navigate("scanner") },
+                mapScreenViewModel = mapScreenViewModel
             )
         }
     }

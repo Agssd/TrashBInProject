@@ -58,7 +58,6 @@
     @Composable
     fun TrashBinScreen(
         trashBinViewModel: TrashBinViewModel = viewModel(),
-        onNavigateToScanner: () -> Unit,
         profileViewModel: ProfileViewModel,
         onProfileClick: () -> Unit,
         onNavigateToMap: (Float, Float) -> Unit

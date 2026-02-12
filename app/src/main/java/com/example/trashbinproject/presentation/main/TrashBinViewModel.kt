@@ -3,6 +3,7 @@ package com.example.trashbinproject.presentation.main
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -22,38 +23,51 @@ class TrashBinViewModel : ViewModel() {
         }
     }
 
-    // Новый метод с гарантированным Челябинском
     fun getCurrentLocationChelyabinsk(context: Context, onResult: (Double, Double) -> Unit) {
-        initializeLocationClient(context)
-
-        // ✅ ПРЯМАЯ ПРОВЕРКА РАЗРЕШЕНИЯ
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) {
-            // Нет разрешения → Челябинск
+        // ✅ ЭМУЛЯТОР = ТОЛЬКО Челябинск!
+        if (isEmulator()) {
+            println("🧪 ЭМУЛЯТОР: ФОРСИРУЕМ Челябинск!")
             onResult(55.1644, 61.4368)
             return
         }
 
-        // Есть разрешение → пытаемся получить локацию
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location ->
-                if (location != null) {
-                    // ✅ Реальные координаты
-                    onResult(location.latitude, location.longitude)
-                } else {
-                    // ❌ Нет свежих данных → Челябинск
-                    onResult(55.1644, 61.4368)
-                }
+        // ✅ Телефон = реальный GPS
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            onResult(55.1644, 61.4368)
+            return
+        }
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            // ✅ БЛОКИРУЕМ Сан-Франциско!
+            val lat = if (location?.latitude == 37.42 && location.longitude == -122.08) {
+                55.1644  // Эмулятор лжет → Челябинск!
+            } else {
+                location?.latitude ?: 55.1644
             }
-            .addOnFailureListener {
-                // ❌ Ошибка → Челябинск
-                onResult(55.1644, 61.4368)
+            val lng = if (location?.longitude?.toFloat() == -122.08f) {
+                61.4368  // Эмулятор лжет → Челябинск!
+            } else {
+                location?.longitude ?: 61.4368
             }
-            .addOnCanceledListener {
-                // ❌ Отменено → Челябинск
-                onResult(55.1644, 61.4368)
-            }
+            println("📍 GPS: lat=$lat, lng=$lng")
+            onResult(lat, lng)
+        }
     }
+
+
+    private fun isEmulator(): Boolean {
+        return Build.FINGERPRINT.startsWith("generic") ||
+                Build.FINGERPRINT.startsWith("unknown") ||
+                Build.MODEL.contains("google_sdk") ||
+                Build.MODEL.contains("Emulator") ||
+                Build.MODEL.contains("Android SDK") ||
+                Build.HARDWARE.contains("goldfish") ||
+                Build.HARDWARE.contains("ranchu")
+    }
+
+
 
 
     fun setScanResultMessage(message: String) {

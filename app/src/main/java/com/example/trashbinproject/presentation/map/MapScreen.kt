@@ -1,33 +1,32 @@
-package com.example.trashbinproject.presentation.map
-
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import com.example.trashbinproject.R
-import com.yandex.mapkit.Animation
+import com.example.trashbinproject.domain.TrashBin
+import com.example.trashbinproject.presentation.map.MapScreenViewModel
+import com.example.zteam.trash.MapBottomSheet
 import com.yandex.mapkit.MapKitFactory
-import com.yandex.mapkit.geometry.Point
-import com.yandex.mapkit.map.CameraPosition
-import com.yandex.mapkit.map.CameraUpdateReason
-import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.mapkit.mapview.MapView
-import com.yandex.runtime.image.ImageProvider
-import kotlinx.coroutines.launch
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,43 +35,51 @@ fun MapScreen(
     userLng: Double,
     onBack: () -> Unit,
     onBackToMain: () -> Unit,
-    viewModel: MapViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    onNavigateToScanner: (Int) -> Unit,
+    mapScreenViewModel: MapScreenViewModel
 ) {
-    println("🚩 MapScreen ПОЛУЧИЛ: lat=$userLat, lng=$userLng")
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val uiState by viewModel.uiState.collectAsState()
-    val nearestBin by viewModel.nearestBin.collectAsState()
+    val uiState by mapScreenViewModel.uiState.collectAsState()
     var mapView: MapView? by remember { mutableStateOf(null) }
+    var selectedBin by remember { mutableStateOf<TrashBin?>(null) }
+    val canScanStatus by mapScreenViewModel.canScanResult.collectAsState()
 
-    // Инициализация MapKit
-    LaunchedEffect(Unit) {
-        MapKitFactory.getInstance().onStart()
+    val mapTapListener by remember {
+        mutableStateOf(object : com.yandex.mapkit.map.InputListener {
+            override fun onMapTap(map: com.yandex.mapkit.map.Map, point: com.yandex.mapkit.geometry.Point) {
+                val clickedBin = uiState.allBins.minByOrNull { bin ->
+                    calculateDistance(point.latitude, point.longitude, bin.latitude, bin.longitude)
+                }?.takeIf { bin ->
+                    calculateDistance(point.latitude, point.longitude, bin.latitude, bin.longitude) < 50
+                }
+
+                clickedBin?.let { bin ->
+                    mapScreenViewModel.checkCanScanBin(bin.id)  // ✅ ФИКС!
+                    selectedBin = bin
+                }
+            }
+            override fun onMapLongTap(map: com.yandex.mapkit.map.Map, point: com.yandex.mapkit.geometry.Point) {}
+        })
     }
+
+    LaunchedEffect(Unit) {
+        mapScreenViewModel.loadTrashBins(userLat, userLng)
+    }
+
     DisposableEffect(Unit) {
         onDispose {
-            MapKitFactory.getInstance().onStop()
             mapView?.onStop()
+            MapKitFactory.getInstance().onStop()
         }
     }
 
-    // Загрузка данных
-    LaunchedEffect(userLat, userLng) {
-        viewModel.loadNearestBins(userLat, userLng)
-    }
-
     Column(modifier = Modifier.fillMaxSize()) {
-        // TopAppBar
         CenterAlignedTopAppBar(
-            title = { Text("Ближайшая мусорка") },
+            title = { Text("Мусорки (${uiState.allBins.size})") },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
                 }
-            },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-            )
+            }
         )
 
         Box(modifier = Modifier.weight(1f)) {
@@ -81,124 +88,38 @@ fun MapScreen(
                     MapView(ctx).apply {
                         mapView = this
                         MapKitFactory.getInstance().onStart()
-                        getMapWindow().getMap().setRotateGesturesEnabled(false)
+                        mapWindow.map.addInputListener(mapTapListener)
                     }
                 },
-                modifier = Modifier.fillMaxSize(),
-                update = { view ->
-                    println("🚩 MapView update: центрируем на $userLat, $userLng")
-                    view.getMapWindow().getMap().move(
-                        CameraPosition(Point(userLat, userLng), 15.0f, 0.0f, 0.0f)
-                    )
-                }
+                update = { view -> MapUpdate(view, userLat, userLng, uiState.allBins,  canScanStatus ) }
             )
-
-            // Loading overlay
-            if (uiState.isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
         }
 
-        // Bottom Sheet (внизу Column, НЕ в Box!)
-        nearestBin?.let { bin ->
+        selectedBin?.let { bin ->
             MapBottomSheet(
-                nearestBin = bin,
+                trashBin = bin,
+                userLat = userLat,
+                userLng = userLng,
                 onBackToMain = onBackToMain,
-                modifier = Modifier.fillMaxWidth()
+                onPhotoClick = {
+                    selectedBin = null
+                    onNavigateToScanner(bin.id)
+                },
+                onClose = { selectedBin = null },
+                mapScreenViewModel = mapScreenViewModel
             )
-        }
-    }
-
-    // Error поверх всего (используем LaunchedEffect для показа)
-    uiState.error?.let { error ->
-        LaunchedEffect(error) {
-            // Показать Snackbar или Dialog с ошибкой
         }
     }
 }
 
-@Composable
-private fun MapBottomSheet(
-    nearestBin: NearestBin,
-    onBackToMain: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.padding(16.dp),
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            // Заголовок
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(36.dp)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = nearestBin.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Расстояние: ${String.format("%.0f", nearestBin.distance)} м",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Divider(
-                modifier = Modifier.padding(vertical = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-
-            InfoRow("Район", nearestBin.district)
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                onClick = onBackToMain,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("На главный экран")
-            }
-        }
-    }
-}
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Text(
-            text = "$label: ",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium
-        )
-    }
+fun calculateDistance(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+    val earthRadius = 6371000.0
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLng = Math.toRadians(lng2 - lng1)
+    val a = sin(dLat / 2) * sin(dLat / 2) +
+            cos(Math.toRadians(lat1.toDouble())) * cos(Math.toRadians(lat2)) *
+            sin(dLng / 2) * sin(dLng / 2)
+    val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return earthRadius * c
 }
 

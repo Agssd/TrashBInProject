@@ -72,7 +72,7 @@ fun OnboardingScreen1(onNext: () -> Unit, onSkip: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(32.dp))
             Text(
-                text = "Добро пожаловать в CleanCity",
+                text = "Добро пожаловать в EcoScan",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,

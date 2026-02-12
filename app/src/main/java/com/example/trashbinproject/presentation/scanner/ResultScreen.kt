@@ -26,10 +26,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.trashbinproject.data.network.RetrofitClient.apiService
+import com.example.trashbinproject.domain.MarkScannedRequest
 import com.example.zteam.trash.ProfileViewModel
 
 @Composable
 fun ResultScreen(
+    binId: Int,
     scannerViewModel: ScannerViewModel,
     profileViewModel: ProfileViewModel,
     onBackToMain: () -> Unit
@@ -64,15 +67,19 @@ fun ResultScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 val fullDetected = predictions.any { it.className.equals("full", ignoreCase = true) }
-                if (fullDetected) {
+                if (fullDetected) {  // ✅ Мусорка полностью заполнена
                     LaunchedEffect(Unit) {
+                        // 1. +10 очков
                         profileViewModel.addPoints(10)
+
+                        // 2. ✅ БЛОКИРУЕМ мусорку!
+                        try {
+                            apiService.markBinScanned(MarkScannedRequest(binId))
+                            println("✅ Мусорка ${binId} заблокирована на 24ч!")
+                        } catch (e: Exception) {
+                            println("⚠️ Ошибка блокировки: ${e.message}")
+                        }
                     }
-                    Text(
-                        text = "Вы обнаружили полный бак! +10 очков",
-                        color = Color.Black,
-                        fontSize = 20.sp
-                    )
                 } else {
                     Text(
                         text = "Баллы не начислены",

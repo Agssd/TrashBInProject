@@ -5,7 +5,7 @@ import com.example.trashbinproject.presentation.auth.AuthViewModel
 import com.example.trashbinproject.presentation.scanner.ScannerViewModel
 import com.example.trashbinproject.data.network.ApiService
 import com.example.trashbinproject.data.network.AuthInterceptor
-import com.example.trashbinproject.data.storage.TokenAuthenticator
+import com.example.trashbinproject.presentation.map.MapScreenViewModel
 import com.example.zteam.trash.ProfileViewModel
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -40,7 +40,7 @@ val appModule = module {
     // ✅ ApiService
     single<ApiService> {
         Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080")
+            .baseUrl("http://192.168.1.104:8080/" )
             .client(get())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -51,5 +51,6 @@ val appModule = module {
     viewModelOf(::AuthViewModel)
     viewModelOf(::ProfileViewModel)
     viewModel { ScannerViewModel(get()) }
+    viewModel { MapScreenViewModel() }
 }
 

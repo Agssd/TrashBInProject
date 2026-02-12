@@ -40,11 +40,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            isDebuggable = false
         }
     }
 
@@ -81,7 +82,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
 
     // Geoloc
-    implementation("com.yandex.android:maps.mobile:4.10.0-full")
+    implementation("com.yandex.android:maps.mobile:4.10.0-lite")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
 
     // CameraX
@@ -97,7 +98,7 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-navigation:3.5.3")
 
 
-    // TF Lite
+    // Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.3") {
